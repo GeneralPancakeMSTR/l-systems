@@ -4,8 +4,9 @@ use std::rc::Rc;
 
 fn main() {
     // G = <V, w, P> 
-    // DOL-System = <Alphabet, Axiom, Productions> 
-    
+    // DOL-System = <Alphabet, Axiom, Productions>     
+
+    // This is now a unit test (anabaena_catenula_filament)
 
     let a_r = Rc::new(Predecessor(String::from("a_r"))); 
     let a_l = Rc::new(Predecessor(String::from("a_l"))); 
@@ -18,18 +19,16 @@ fn main() {
     productions.0.insert(Rc::clone(&b_r),Successor(vec![Rc::clone(&a_r)]));
     productions.0.insert(Rc::clone(&b_l),Successor(vec![Rc::clone(&a_l)]));
 
-    // let mut axiom = DOLString(vec![Rc::clone(&a_r)]);
-    let mut axiom = vec![Rc::clone(&a_r)];
+    let mut axiom = DOLString(vec![Rc::clone(&a_r)]);
 
-    for n in 0..4 {
-        println!("{n} {:?}",axiom);
+    println!("0 {}",axiom);
+
+    for n in 1..5 {        
+        // println!("{n} {:?}",axiom);        
         axiom = productions.evaluate(&axiom);
+        println!("{n} {}",axiom);
     };  
 
-    println!("{:?}",axiom);
-
-    let dolstring = DOLString(axiom); 
-
-    println!("{dolstring}");
+    println!("{}",axiom);
 
 }
