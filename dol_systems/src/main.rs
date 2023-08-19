@@ -4,66 +4,130 @@
 
 // use dol_systems::{State, Instruction}; 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct State(String); 
 
-struct Instruction(
-    Box<dyn Fn(& State, Vec<f64>) -> State>
-);
+trait Symbol {
+    fn representation(&self) -> String; 
+    fn evaluate(&self, state: & State) -> State; 
+    fn produce(&self,constants: & Vec<f64>) -> Vec<Box<dyn Symbol>>;
+}
 
-impl Instruction {
-    fn evaluate(&self, state: & State, parameters: Vec<f64> ) -> State {
-        self.0(&state, parameters)
+struct A {
+    parameters: Vec<f64>
+}
+
+struct F {
+    parameters: Vec<f64>
+}
+
+impl Symbol for A {
+    fn representation(&self) -> String {
+        String::from(format!("A({:?})",self.parameters))
+    }
+
+    fn evaluate(&self, state: & State) -> State {
+        State(format!("A({} x {:?})",state.0,self.parameters))
+    }
+
+    fn produce(&self, constants: & Vec<f64>) -> Vec<Box<dyn Symbol>> {
+        let s = self.parameters[0]; 
+        let r = constants[0]; 
+
+        vec![Box::new(F{parameters:vec![s]}),Box::new(A{parameters:vec![s/r]})]
     }
 }
 
-struct Symbol {
-    representation: String,
-    command: Instruction
+impl Symbol for F {
+    fn representation(&self) -> String {
+        String::from(format!("F({:?})",self.parameters))
+    }
+
+    fn evaluate(&self, state: & State) -> State {
+        State(format!("F({} x {:?})",state.0,self.parameters))
+    }
+
+    fn produce(&self, _constants: & Vec<f64>) -> Vec<Box<dyn Symbol>> {
+        let s = self.parameters[0];                 
+        vec![Box::new(F{parameters:vec![s]})]
+    }
 }
-
-
-
 fn main() {
-    // G = <V, w, P> 
-    // DOL-System = <Alphabet, Axiom, Productions>
+    let pred_a = A{parameters: vec![1.0]};    
 
-    // let a = Predecessor("A",instruction);
+    let constants = vec![1.456]; 
+    let lstring_axiom: Vec<Box<dyn Symbol>> = vec![Box::new(pred_a)]; 
 
-    // let predecessor = Symbol{repr: String::from("A"),command: String::from("Move forward by 1")}; 
-    // println!("{}",predecessor.repr); 
-    // println!("{}",predecessor.command); 
+    //////////////// Axiom ////////////////
+    for dynamic_symbol in lstring_axiom.iter() {
+        println!("{}",dynamic_symbol.representation());
+    }
 
+    println!();
+    
+    //////////////// Production 0 ////////////////
+    let mut lstring_p0: Vec<Box<dyn Symbol>> = Vec::new(); 
 
-    // Symbol.instruction.evaluate(&state, parameters); 
-    // let command = Command(Box::new(actual_instruction));
+    for dynamic_symbol in lstring_axiom.iter() {        
+        let production = dynamic_symbol.produce(&constants); 
 
-    let s = State(String::from("An Initial State"));
-    let p = vec![0.0,1.0,2.0]; 
+        for produced_symbol in production { 
+            lstring_p0.push(produced_symbol);
+        }        
+    }    
 
-    let predecessor_a = Symbol{representation:String::from("A"),command:Instruction(Box::new(actual_instruction))};
+    for dynamic_symbol in lstring_p0.iter() {
+        println!("{}",dynamic_symbol.representation());        
+    }
 
-    println!("Predecessor symbol: {}",predecessor_a.representation);
-    let new_state = predecessor_a.command.evaluate(&s, p); 
-    println!("{:?}",new_state);
+    println!();
 
-    let p = vec![3.0,4.0,5.0]; 
-    let new_state = predecessor_a.command.evaluate(&new_state, p); 
-    println!("{:?}",new_state);
+    //////////////// Production 1 ////////////////
+    let mut lstring_p1: Vec<Box<dyn Symbol>> = Vec::new(); 
+
+    for dynamic_symbol in lstring_p0.iter() {
+        let production = dynamic_symbol.produce(&constants); 
+
+        for produced_symbol in production {
+            lstring_p1.push(produced_symbol);
+        }
+    }
+
+    for dynamic_symbol in lstring_p1.iter() {
+        println!("{}",dynamic_symbol.representation());
+    }
+
+    println!();
+
+    //////////////// Production 2 ////////////////
+    let mut lstring_p2: Vec<Box<dyn Symbol>> = Vec::new(); 
+
+    for dynamic_symbol in lstring_p1.iter() {
+        let production = dynamic_symbol.produce(&constants); 
+
+        for produced_symbol in production {
+            lstring_p2.push(produced_symbol);
+        }
+    }
+
+    for dynamic_symbol in lstring_p2.iter() {
+        println!("{}",dynamic_symbol.representation());
+    }
+
+    println!();
+
+    //////////////// Evaluate ////////////////        
+    let mut current_state = State(String::from("An Initial State")); 
+
+    let mut states = vec![current_state.clone()];
+
+    for dynamic_symbol in lstring_p2.iter() {        
+        current_state = dynamic_symbol.evaluate(&current_state);
+        states.push(current_state.clone());        
+    }
+
+    for state in states.iter(){
+        println!("{:?}",state);
+    }
 
 }
-
-fn actual_instruction(state: & State, parameters: Vec<f64>) -> State {
-    State(format!("{:?} x {}",parameters,state.0))
-}
-
-// You could imagine doing something like this too 
-// A command/instruction constructor 
-// fn rotate_by(axis: Vector, angle: Radians) -> Box<dyn Fn(& State, Vec<f64>) -> State> { }
-
-// For reference 
-// fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
-//     Box::new(|x| x + 1)
-// }
-                                
-
