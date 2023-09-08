@@ -1,7 +1,8 @@
 {
     "rust-analyzer.linkedProjects": [        
         "./matrix4/Cargo.toml",
-        "./dol_systems/Cargo.toml"
+        "./dol_systems/Cargo.toml",
+        "./lsystems/Cargo.toml"
     ],    
     "files.watcherExclude": {
         "**/.git/objects/**": true,
