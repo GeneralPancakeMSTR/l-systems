@@ -1,6 +1,7 @@
+use lsystems::State; 
 use lsystems::Constants; 
 use lsystems::Alphabet::{A,F}; 
-use lsystems::produce; 
+use lsystems::{produce,write}; 
 
 // skeletizzle recommends something like 
 // enum Symbol {
@@ -22,11 +23,20 @@ fn main() {
     let constants = Constants{r:1.456, p:1.414}; 
     let mut axiom = vec![A{s:1.0}]; 
     
-    println!("{:?}",axiom);
+    println!("{}",write(&axiom));
     println!(); 
 
-    axiom = produce(&axiom, &constants, 2); 
+    axiom = produce(&axiom, &constants, 1);     
 
-    println!("{:?}",axiom);
+    println!("{}",write(&axiom));
+    println!(); 
+
+    let mut state = State::from(String::from("S0"));
+    println!("{:?}",state);
+
+    for symbol in axiom.iter() {
+        state = symbol.evaluate(&state);
+        println!("{:?}",state)
+    }
 
 }

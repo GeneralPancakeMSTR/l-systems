@@ -14,6 +14,12 @@ impl Something {
 #[derive(Debug, Clone)]
 pub struct State(String); 
 
+impl State {
+    pub fn from(string: String) -> Self {
+        State(string)
+    }
+}
+
 //////////////// Symbols Interface ////////////////
 pub trait Symbol {
     fn representation(&self) -> String; 
@@ -24,6 +30,30 @@ pub trait Symbol {
 // Major Problem: Can't implement copy/clone 
 
 //////////////// Enum ////////////////
+// struct Rx {
+//     t:f64 // theta 
+// }
+// impl Rx {
+//     fn evaluate(&self, state: &State) -> State {
+//         State(format!("Rotate {} by {} about x",state.0, self.t))
+//     }
+// }
+// A<Rx>{s:f64} ? 
+// F<Tx>{x:f64} ? 
+// Such that 
+// pub enum Alphabet {
+//     A<Rx>{s:f64}
+//     F<Tx>{x:f64}
+// }
+// or maybe 
+// A = Symbol::RotateX; 
+// F = Symbol::TranslateX; 
+// Could you do 
+// pub enum Alphabet {
+//     A{Symbol::RotateX}{s:f64}
+//     F{Symbol::TranslateX}{s:f64}
+// }
+
 pub struct Constants {
     pub r: f64, 
     pub p: f64
@@ -33,6 +63,15 @@ pub struct Constants {
 pub enum Alphabet {
     A{s:f64},
     F{x:f64}
+}
+
+impl fmt::Display for Alphabet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {        
+        match self {
+            A{s} => write!(f,"A({:.3})",s),
+            F{x} => write!(f,"F({:.3})",x)
+        }
+    }
 }
 
 use Alphabet::A; 
@@ -45,11 +84,8 @@ impl Alphabet {
 
         match self {
             A{s} => {
-                vec![F{x:1.0},A{s:s/r},A{s:p}]
+                vec![F{x:*s},A{s:s/r},A{s:p}]
             },
-            // F{x} => {                
-            //     vec![F{x: x.clone()}]
-            // },
             _ => {
                 vec![self.clone()]
             }
@@ -57,13 +93,32 @@ impl Alphabet {
     }
 }
 
-struct LSystem {
-    constants: Constants, 
-    axiom: Vec<Alphabet>
+impl Alphabet {
+    pub fn evaluate(&self, state: &State) -> State {
+        // Ultimately, we would like to be able to do something like 
+        // self.op(state)         
+        // or I guess 
+        // self.op(s)(state) 
+        // which would require a lambda function 
+        // or ...
+        match self {
+            A{s} => rx(state,*s),
+            F{x} => tx(state,*x)
+        }
+    }
 }
 
-pub fn produce(axiom: &Vec<Alphabet>, constants: &Constants, iterations: u32) -> Vec<Alphabet> {
-    println!("{iterations}");
+// Could do... 
+pub fn rx(state: &State, angle_rads: f64) -> State {
+    State(format!("Rotate ({}) by {} about x",state.0,angle_rads))
+}
+
+pub fn tx(state: &State, l: f64) -> State {
+    State(format!("Translate ({}) by {} along x",state.0,l))
+}
+
+//////////////// Functions that operate on a LSystem (as a Vec<Alphabet>) ////////////////
+pub fn produce(axiom: &Vec<Alphabet>, constants: &Constants, iterations: u32) -> Vec<Alphabet> {    
     let mut production: Vec<Alphabet> = Vec::new(); 
 
     match iterations {
@@ -71,25 +126,43 @@ pub fn produce(axiom: &Vec<Alphabet>, constants: &Constants, iterations: u32) ->
             for symbol in axiom.iter() {
                 production.push(symbol.clone()); 
             }
-            production 
+            production             
         }, 
-        _ => {
-            
+        _ => {            
             for symbol in axiom.iter() {
                 production.extend(symbol.produce(&constants));                
-            };
-            
+            };            
             return produce(&production, &constants, iterations-1); 
         }
     }
-
 }
+
+pub fn write(axiom: &Vec<Alphabet>) -> String {
+    let mut string = String::new(); 
+    for symbol in axiom.iter() {        
+        string.push_str(&format!("{symbol}"));
+    }
+    string 
+}
+
+
 
 //////////////// LString ////////////////
 // ??? 
 
 //////////////// LSystem ////////////////
-// ??? 
+// struct LSystem {
+//     constants: Constants, 
+//     axiom: Vec<Alphabet>
+// }
+
+// impl LSystem {
+//     display ... 
+//     produce ... 
+//     evaluate ... 
+// }
+
+
 
 //////////////// Symbols ////////////////
 pub struct ASymbol {
