@@ -62,20 +62,26 @@ pub struct Constants {
 #[derive(Debug, Copy, Clone)]
 pub enum Alphabet {
     A{s:f64},
-    F{x:f64}
+    F{x:f64},
+    Push,
+    Pop
 }
+
+use Alphabet::A; 
+use Alphabet::F; 
+use Alphabet::Push; 
+use Alphabet::Pop; 
 
 impl fmt::Display for Alphabet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {        
         match self {
             A{s} => write!(f,"A({:.3})",s),
-            F{x} => write!(f,"F({:.3})",x)
+            F{x} => write!(f,"F({:.3})",x),
+            Push => write!(f,"["),
+            Pop => write!(f,"]"),
         }
     }
 }
-
-use Alphabet::A; 
-use Alphabet::F; 
 
 impl Alphabet {
     pub fn produce(&self, constants: &Constants) -> Vec<Alphabet> {
@@ -84,7 +90,7 @@ impl Alphabet {
 
         match self {
             A{s} => {
-                vec![F{x:*s},A{s:s/r},A{s:p}]
+                vec![F{x:*s},Push,A{s:s/r},Pop,A{s:p}]
             },
             _ => {
                 vec![self.clone()]
@@ -93,8 +99,14 @@ impl Alphabet {
     }
 }
 
+pub enum EvalReturns {
+    State(State),
+    PushState, 
+    PopState
+}
+
 impl Alphabet {
-    pub fn evaluate(&self, state: &State) -> State {
+    pub fn evaluate(&self, state: &State) -> EvalReturns {
         // Ultimately, we would like to be able to do something like 
         // self.op(state)         
         // or I guess 
@@ -102,8 +114,10 @@ impl Alphabet {
         // which would require a lambda function 
         // or ...
         match self {
-            A{s} => rx(state,*s),
-            F{x} => tx(state,*x)
+            A{s} => EvalReturns::State(rx(state,s.clone())),
+            F{x} => EvalReturns::State(tx(state,x.clone())),
+            Push => EvalReturns::PushState,
+            Pop => EvalReturns::PopState,
         }
     }
 }
@@ -116,6 +130,14 @@ pub fn rx(state: &State, angle_rads: f64) -> State {
 pub fn tx(state: &State, l: f64) -> State {
     State(format!("Translate ({}) by {} along x",state.0,l))
 }
+
+// pub fn pushstate(state: &State) -> EvalReturns {
+//     EvalReturns::PushState 
+// } 
+
+// pub fn popstate(state: &State) -> EvalReturns {
+//     EvalReturns::PopState
+// } 
 
 //////////////// Functions that operate on a LSystem (as a Vec<Alphabet>) ////////////////
 pub fn produce(axiom: &Vec<Alphabet>, constants: &Constants, iterations: u32) -> Vec<Alphabet> {    
@@ -144,8 +166,6 @@ pub fn write(axiom: &Vec<Alphabet>) -> String {
     }
     string 
 }
-
-
 
 //////////////// LString ////////////////
 // ??? 

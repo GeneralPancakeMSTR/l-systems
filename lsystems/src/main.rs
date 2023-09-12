@@ -1,7 +1,8 @@
+use lsystems::EvalReturns;
 use lsystems::State; 
 use lsystems::Constants; 
 use lsystems::Alphabet::{A,F}; 
-use lsystems::{produce,write}; 
+use lsystems::{produce,write};
 
 // skeletizzle recommends something like 
 // enum Symbol {
@@ -26,17 +27,43 @@ fn main() {
     println!("{}",write(&axiom));
     println!(); 
 
-    axiom = produce(&axiom, &constants, 1);     
+    axiom = produce(&axiom, &constants, 1);
 
     println!("{}",write(&axiom));
     println!(); 
 
-    let mut state = State::from(String::from("S0"));
-    println!("{:?}",state);
+    let mut states: Vec<State> = vec![State::from(String::from("S0"))]; 
+    let mut stack: Vec<State> = Vec::new(); 
+
+    let mut current_state = states[0].clone(); 
 
     for symbol in axiom.iter() {
-        state = symbol.evaluate(&state);
-        println!("{:?}",state)
+        match symbol.evaluate(&current_state) {
+            EvalReturns::State(state) => {                
+                states.push(state.clone());
+                current_state = state;
+            },
+            EvalReturns::PushState => {
+                stack.push(current_state.clone());                
+            }, 
+            EvalReturns::PopState => {                
+                current_state = match stack.pop(){
+                    Some(state) => state,
+                    None => {                        
+                        // Strictly speaking this should never happen,
+                        // (it means a pop preceded a push),
+                        // but in case it does, nothing has to be done.
+                        // It just means "keep the current state."
+                        current_state
+                    }
+                };
+            }, 
+        }
     }
+
+    for (i,state) in states.iter().enumerate() {
+        println!("S_{i} = {:?}",state)
+    }
+    
 
 }
