@@ -37,6 +37,8 @@ impl State {
 //     F{Symbol::TranslateX}{s:f64}
 // }
 
+
+
 #[derive(Debug, Copy, Clone)]
 pub struct Constants {
     pub r: f64, 
@@ -115,8 +117,67 @@ pub fn tx(state: &State, l: f64) -> State {
     State(format!("Translate ({}) by {} along x",state.0,l))
 }
 
+//////////////// LSystem - Generics? ////////////////
+// pub trait Produce<S, C: Clone> {
+//     type S; // Alphabet / Symbols 
+//     type C; // Constants 
+//     fn produce(&self,constants: &Self::C) -> Vec<Self::S>; 
+// }
+
+// pub trait Evaluate {
+//     fn evaluate(&self, state: State) -> EvalReturns; 
+// }
+
+// pub trait GLSystem<S: Produce<S,C> + Evaluate + Clone, C: Clone> {}
+
+// pub struct GLSystem<S: Produce<S,C> + Evaluate + Clone, C: Clone> {
+//     constants: C, 
+//     axiom: Vec<S>, 
+// }
+
+pub trait ConstantsTrait: Clone {}
+
+pub trait AlphabetTrait<C: ConstantsTrait>: Clone + fmt::Display {
+    fn produce(&self, constants: &C) -> Vec<Self>; 
+    fn evaluate(&self) -> EvalReturns;
+}
+
+pub struct GLSystem<C: ConstantsTrait, S: AlphabetTrait<C>> {
+    pub constants: C, 
+    pub axiom: Vec<S> 
+}
+
+impl<C: ConstantsTrait, S: AlphabetTrait<C>> Clone for GLSystem<C,S> {
+    fn clone(&self) -> GLSystem<C,S> {
+        let constants = self.constants.clone(); 
+        
+        let mut axiom = Vec::new(); 
+
+        for symbol in self.axiom.iter() {
+            axiom.push(symbol.clone());
+        };
+
+        GLSystem{ constants: constants, axiom: axiom }
+        
+    }
+}
+
+impl<C: ConstantsTrait, S: AlphabetTrait<C>> fmt::Display for GLSystem<C,S>{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut string = String::new(); 
+
+        for symbol in self.axiom.iter() {
+            string.push_str(&format!("{symbol}"));
+        }
+
+        write!(f,"{string}")       
+        
+    }
+}
+
 //////////////// LSystem ////////////////
 // impl ::from ? 
+
 pub struct LSystem {
     pub constants: Constants, 
     pub axiom: Vec<Alphabet>
@@ -205,136 +266,73 @@ impl LSystem {
     }
 }
 
-//////////////// Functions that operate on a LSystem (as a Vec<Alphabet>) ////////////////
-// Don't get rid of this, it might legitimately be worth putting into the LSystem.produce implementation 
-// pub fn produce(axiom: &Vec<Alphabet>, constants: &Constants, iterations: u32) -> Vec<Alphabet> {    
-//     let mut production: Vec<Alphabet> = Vec::new(); 
-
-//     match iterations {
-//         0 => {
-//             for symbol in axiom.iter() {
-//                 production.push(symbol.clone()); 
-//             }
-//             production             
-//         }, 
-//         _ => {            
-//             for symbol in axiom.iter() {
-//                 production.extend(symbol.produce(&constants));                
-//             };            
-//             return produce(&production, &constants, iterations-1); 
-//         }
-//     }
-// }
-
-// impl Clone for LSystem {
-//     fn clone(&self) -> Self {
-//         let constants = self.constants.clone(); 
-        
-//         let mut axiom = Vec::new(); 
-        
-//         for symbol in self.axiom.iter() {
-//             axiom.push(symbol.clone());
-//         };
-        
-//         LSystem { constants: constants, axiom: axiom }
-//     }
-// }
-
-// Recursive version 
-// Fine, but it unnecessarily clones the constants every iteration 
-// impl LSystem {
-//     pub fn produce(&self, iterations: u32) -> LSystem {
-//         match iterations {
-//             0 => self.clone(),
-//             _ => {                
-//                 let mut production: Vec<Alphabet> = Vec::new(); 
-//                 for symbol in self.axiom.iter() {
-//                     production.extend(symbol.produce(&self.constants));
-//                 };
-//                 LSystem{constants: self.constants.clone(), axiom: production}.produce(iterations-1)
-//             }
-//         }
-//     }
-// }
-
-// pub fn write(axiom: &Vec<Alphabet>) -> String {
-//     let mut string = String::new(); 
-//     for symbol in axiom.iter() {        
-//         string.push_str(&format!("{symbol}"));
-//     }
-//     string 
-// }
-
-//////////////// LString ////////////////
-// ??? 
-
 //////////////// Symbols Interface ////////////////
-use std::collections::HashMap; 
+// use std::collections::HashMap; 
 
-pub trait Symbol {
-    fn representation(&self) -> String; 
-    fn evaluate(&self, state: & State) -> State; 
-    fn produce(&self, constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>>;
-}
+// pub trait Symbol {
+//     fn representation(&self) -> String; 
+//     fn evaluate(&self, state: & State) -> State; 
+//     fn produce(&self, constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>>;
+// }
 
-// Major Problem: Can't implement copy/clone 
+// // Major Problem: Can't implement copy/clone 
 
-//////////////// Symbols ////////////////
-pub struct ASymbol {
-    pub parameters: Vec<f64>
-}
+// //////////////// Symbols ////////////////
+// pub struct ASymbol {
+//     pub parameters: Vec<f64>
+// }
 
-impl Symbol for ASymbol {
-    fn representation(&self) -> String {
-        String::from(format!("A({:?})",self.parameters))
-    }
+// impl Symbol for ASymbol {
+//     fn representation(&self) -> String {
+//         String::from(format!("A({:?})",self.parameters))
+//     }
 
-    fn evaluate(&self, state: & State) -> State {
-        State(format!("A({} x {:?})",state.0, self.parameters))
-    }
+//     fn evaluate(&self, state: & State) -> State {
+//         State(format!("A({} x {:?})",state.0, self.parameters))
+//     }
 
-    fn produce(&self, constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>> {
-        let s = self.parameters[0]; 
+//     fn produce(&self, constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>> {
+//         let s = self.parameters[0]; 
 
-        let (r,p) = (1.0,3.0); // Defaults 
+//         let (r,p) = (1.0,3.0); // Defaults 
 
-        let (r,p) = match constants {
-            Some(hashmap) => {
-                let r = match hashmap.get("r") {
-                    Some(r) => *r, 
-                    None => r,  
-                };
+//         let (r,p) = match constants {
+//             Some(hashmap) => {
+//                 let r = match hashmap.get("r") {
+//                     Some(r) => *r, 
+//                     None => r,  
+//                 };
 
-                let p = match hashmap.get("p") {
-                    Some(p) => *p, 
-                    None => p, 
-                }; 
+//                 let p = match hashmap.get("p") {
+//                     Some(p) => *p, 
+//                     None => p, 
+//                 }; 
 
-                (r,p)
+//                 (r,p)
                 
-            },
-            None => (r,p) // Defaults 
-        };
+//             },
+//             None => (r,p) // Defaults 
+//         };
 
-        vec![Box::new(FSymbol{parameters:vec![s]}),Box::new(ASymbol{parameters:vec![s/r]}),Box::new(ASymbol{parameters:vec![p]})]
-    }
-}
+//         vec![Box::new(FSymbol{parameters:vec![s]}),Box::new(ASymbol{parameters:vec![s/r]}),Box::new(ASymbol{parameters:vec![p]})]
+//     }
+// }
 
-pub struct FSymbol {
-    pub parameters: Vec<f64>
-}
+// pub struct FSymbol {
+//     pub parameters: Vec<f64>
+// }
 
-impl Symbol for FSymbol {
-    fn representation(&self) -> String {
-        String::from(format!("F({:?})",self.parameters))
-    }
+// impl Symbol for FSymbol {
+//     fn representation(&self) -> String {
+//         String::from(format!("F({:?})",self.parameters))
+//     }
 
-    fn evaluate(&self, state: & State) -> State {
-        State(format!("F({} x {:?})", state.0, self.parameters))
-    }
+//     fn evaluate(&self, state: & State) -> State {
+//         State(format!("F({} x {:?})", state.0, self.parameters))
+//     }
 
-    fn produce(&self, _constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>> {        
-        vec![Box::new(FSymbol{parameters: self.parameters.clone()})]
-    }        
-}
+//     fn produce(&self, _constants: Option<&HashMap<&str,f64>>) -> Vec<Box<dyn Symbol>> {        
+//         vec![Box::new(FSymbol{parameters: self.parameters.clone()})]
+//     }        
+// }
 
