@@ -1,37 +1,35 @@
+//////////////// Example of a Successful LSystem Implementation ////////////////
+// Being the first successful LSystem proof-of-concept I managed, this is maintained for posterity. 
+// It is kept for reference and demonstrative purposes, and deliberately encapsulated and independent of the rest of the code in this project. 
+
 use std::fmt; 
 
-use crate::state::State; 
-use crate::state::rx; 
-use crate::state::tx; 
-use crate::glsystem::EvalReturns; 
+//////////////// State ////////////////
+#[derive(Debug, Clone)]
+pub struct State(String); 
+
+impl State {
+    pub fn from(string: String) -> Self {
+        State(string)
+    }
+}
+
+pub fn rx(state: &State, angle_rads: f64) -> State {
+    State(format!("Rotate ({}) by {} about x",state.0,angle_rads))
+}
+
+pub fn tx(state: &State, l: f64) -> State {
+    State(format!("Translate ({}) by {} along x",state.0,l))
+}
+
+//////////////// EvalReturns ////////////////
+pub enum EvalReturns {
+    State(State),
+    PushState, 
+    PopState
+}
 
 //////////////// Enum ////////////////
-// Credit to skeletizzle for recommending enum 
-
-// struct Rx {
-//     t:f64 // theta 
-// }
-// impl Rx {
-//     fn evaluate(&self, state: &State) -> State {
-//         State(format!("Rotate {} by {} about x",state.0, self.t))
-//     }
-// }
-// A<Rx>{s:f64} ? 
-// F<Tx>{x:f64} ? 
-// Such that 
-// pub enum Alphabet {
-//     A<Rx>{s:f64}
-//     F<Tx>{x:f64}
-// }
-// or maybe 
-// A = Symbol::RotateX; 
-// F = Symbol::TranslateX; 
-// Could you do 
-// pub enum Alphabet {
-//     A{Symbol::RotateX}{s:f64}
-//     F{Symbol::TranslateX}{s:f64}
-// }
-
 #[derive(Debug, Copy, Clone)]
 pub struct Constants {
     pub r: f64, 
@@ -96,11 +94,6 @@ impl Alphabet {
 }
 
 //////////////// LSystem ////////////////
-// impl ::from ? 
-
-//////////////// LSystem ////////////////
-// impl ::from ? 
-
 pub struct LSystem {
     pub constants: Constants, 
     pub axiom: Vec<Alphabet>
@@ -153,7 +146,7 @@ impl LSystem {
 
     }
 
-    pub fn evaluate(&self, state: State) -> Vec<State> {
+    pub fn evaluate(&self, state: &State) -> Vec<State> {
         let mut states: Vec<State> = vec![state.clone()];         
         let mut stack: Vec<State> = Vec::new(); 
 
@@ -187,4 +180,37 @@ impl LSystem {
         states
 
     }
+}
+
+//////////////// Test/Demonstration ////////////////
+pub fn test_lsystem() {
+    println!();
+    
+    let constants = Constants{r: 1.456, p:1.414}; 
+
+    let s0 = 1.0; 
+    let axiom = vec![A{s:s0}]; 
+
+    let mut lsystem = LSystem{constants: constants, axiom: axiom};    
+    
+    println!("Axiom: {lsystem}");
+
+    lsystem = lsystem.produce(1); 
+
+    println!("Production 1: {lsystem}");
+
+    lsystem = lsystem.produce(1); 
+
+    println!("Production 2: {lsystem}");
+
+    let state0 = State::from(String::from("S0"));
+
+    let states = lsystem.evaluate(&state0); 
+
+    println!();
+
+    for (i, state) in states.iter().enumerate() {
+        println!("S{i} = {:?}",state);
+    }
+
 }
