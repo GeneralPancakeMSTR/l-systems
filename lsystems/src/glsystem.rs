@@ -1,10 +1,30 @@
 use std::fmt; 
 
+//////////////// EvalReturns ////////////////
 use crate::state::State; 
-use crate::state::EvalReturns; 
 
+#[derive(Debug, PartialEq)]
+pub enum EvalReturns {
+    State(State),
+    PushState, 
+    PopState
+}
 
-//////////////// LSystem - Generics? ////////////////
+impl EvalReturns {
+    // Dunno why complaining about this not being used, it's used in the unit tests 
+    fn unwrap_state(&self) -> State {
+        match self {
+            EvalReturns::State(state) => state.clone(), // #ToDo actually move state out of EvalReturns enum 
+            _ => State::from(String::from("Error: Tried to Extract State from PushState or PopState.")), // #ToDo Handle This Better
+        }
+    }
+}
+
+//////////////// Canned Symbols ? ////////////////
+// struct Push; 
+// struct Pop; 
+
+//////////////// LSystem - Generics ////////////////
 pub trait ConstantsTrait: Clone {}
 
 pub trait AlphabetTrait<C: ConstantsTrait>: Clone + fmt::Display {
@@ -66,7 +86,7 @@ impl <C: ConstantsTrait, S: AlphabetTrait<C>> GLSystem<C,S> {
 
     }
 
-    pub fn evaluate(&self, state: State) -> Vec<State> {
+    pub fn evaluate(&self, state: &State) -> Vec<State> {
         let mut states: Vec<State> = vec![state.clone()]; 
         let mut stack: Vec<State> = Vec::new(); 
 
@@ -100,8 +120,128 @@ impl <C: ConstantsTrait, S: AlphabetTrait<C>> GLSystem<C,S> {
         states 
 
     }
-
 }
 
+//////////////// Tests ////////////////
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    //////////////// Implementation  ////////////////
+    use crate::state::rx; 
+    use crate::state::tx; 
 
+    #[derive(Debug, Copy, Clone)]
+    struct Constants {
+        pub r: f64, 
+        pub p: f64 
+    }
+
+    impl ConstantsTrait for Constants{}
+
+    #[derive(Debug, Copy, Clone, PartialEq)]  // #ToDo Probably should add PartialEq to AlphabetTrait bounds
+    enum Alphabet {
+        A{s: f64},
+        F{x: f64},
+        Push, 
+        Pop 
+    }
+
+    use Alphabet::A;
+    use Alphabet::F;
+    use Alphabet::Push;
+    use Alphabet::Pop; 
+
+    impl fmt::Display for Alphabet {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                A{s} => write!(f,"A({:.3})",s),
+                F{x} => write!(f,"F({:.3})",x),
+                Push => write!(f,"["),
+                Pop => write!(f,"]")
+            }
+        }
+    }
+
+    impl AlphabetTrait<Constants> for Alphabet {
+        fn produce(&self, constants: &Constants) -> Vec<Alphabet> {
+            let r = constants.r; 
+            let p = constants.p; 
+
+            match self {
+                A{s} => {
+                    vec![F{x:s.clone()}, Push, A{s:s/r}, Pop, A{s:p}]
+                },
+                _ => vec![self.clone()]
+            }
+        }
+
+        fn evaluate(&self, state: &State) -> EvalReturns {
+            match self {
+                A{s} => EvalReturns::State(rx(state,s.clone())),
+                F{x} => EvalReturns::State(tx(state,x.clone())),
+                Push => EvalReturns::PushState, 
+                Pop => EvalReturns::PopState
+            }
+        }
+    }
+
+    #[test]
+    fn produce() {        
+        let constants = Constants{r: 1.456, p: 1.414}; 
+
+        let r = constants.r; 
+        let p = constants.p; 
+
+        let s0 = 1.0; 
+
+        let axiom = vec![A{s:s0}];
+
+        let mut lsystem = GLSystem{constants: constants, axiom: axiom};
+
+        // Production 0 (axiom) 
+        assert_eq!(lsystem.axiom,vec![A{s:s0}]); 
+
+        // Production 1
+        lsystem = lsystem.produce(1);
+
+        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, A{s:s0/r}, Pop, A{s:p}]); 
+
+        // Production 2
+        lsystem = lsystem.produce(1);
+
+        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, F{x:s0/r}, Push, A{s:s0/r/r}, Pop, A{s:p}, Pop, F{x:p}, Push, A{s:p/r}, Pop, A{s:p}]); 
+    }
+
+    #[test]
+    fn produce_and_evaluate() {
+        let constants = Constants{r: 1.456, p: 1.414}; 
+
+        let r = constants.r; 
+        let p = constants.p; 
+
+        let s0 = 1.0; 
+
+        let axiom = vec![A{s:s0}];
+
+        let mut lsystem = GLSystem{constants: constants, axiom: axiom};
+
+        let state0 = State::from(String::from("S1")); 
+
+        // Production 0 (Axiom)
+        let states0 = lsystem.evaluate(&state0);
+
+        assert_eq!(states0,vec![state0.clone(), A{s:s0}.evaluate(&state0).unwrap_state()]);
+
+        // Production 1
+        lsystem = lsystem.produce(1);
+
+        let states1 = lsystem.evaluate(&state0);
+
+        let f_x_s0 = F{x:s0}.evaluate(&state0).unwrap_state(); 
+        let a0_x_f_x_s0 = A{s:s0/r}.evaluate(&f_x_s0).unwrap_state(); 
+        let a1_x_f_x_s0 = A{s:p}.evaluate(&f_x_s0).unwrap_state(); 
+
+        assert_eq!(states1,vec![state0.clone(),f_x_s0,a0_x_f_x_s0,a1_x_f_x_s0]);
+    }
+}

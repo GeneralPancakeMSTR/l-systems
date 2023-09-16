@@ -3,7 +3,7 @@ use crate::glsystem::ConstantsTrait;
 use crate::glsystem::AlphabetTrait;
 
 use crate::state::State; 
-use crate::state::EvalReturns; 
+use crate::glsystem::EvalReturns; 
 use crate::state::rx; 
 use crate::state::tx; 
 

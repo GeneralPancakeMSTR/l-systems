@@ -6,6 +6,7 @@ use lsystems::lsystem::LSystem;
 use lsystems::glsystem::GLSystem; 
 
 
+
 use lsystems::galphabet::{self}; 
 
 // Factory pattern? https://stackoverflow.com/questions/65847670/how-to-implement-abstract-factory-in-rust
@@ -14,8 +15,8 @@ fn main() {
     //////////////// lsystem ////////////////
     let mut lsystem = LSystem{constants: Constants{r:1.456, p:1.414}, axiom: vec![A{s:1.0}]}; 
 
-    println!("{lsystem}");
-    println!(); 
+    println!("{lsystem}\n");
+    
 
     lsystem = lsystem.produce(1); 
 
@@ -49,7 +50,7 @@ fn main() {
 
     let s0 = State::from(String::from("S0"));
 
-    let gstates = glsystem.evaluate(s0); 
+    let gstates = glsystem.evaluate(&s0); 
 
     for (i,gstates) in gstates.iter().enumerate() {
         println!("S_{i} = {:?}",gstates)
@@ -58,6 +59,9 @@ fn main() {
     println!(); 
 
 
+
+
     
 
 }
+

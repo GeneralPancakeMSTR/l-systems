@@ -1,5 +1,5 @@
 //////////////// State ////////////////
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct State(String); 
 
 impl State {
@@ -15,11 +15,4 @@ pub fn rx(state: &State, angle_rads: f64) -> State {
 
 pub fn tx(state: &State, l: f64) -> State {
     State(format!("Translate ({}) by {} along x",state.0,l))
-}
-
-//////////////// EvalReturns ////////////////
-pub enum EvalReturns {
-    State(State),
-    PushState, 
-    PopState
 }

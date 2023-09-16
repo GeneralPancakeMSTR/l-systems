@@ -3,8 +3,7 @@ use std::fmt;
 use crate::state::State; 
 use crate::state::rx; 
 use crate::state::tx; 
-use crate::state::EvalReturns; 
-
+use crate::glsystem::EvalReturns; 
 
 //////////////// Enum ////////////////
 // Credit to skeletizzle for recommending enum 
