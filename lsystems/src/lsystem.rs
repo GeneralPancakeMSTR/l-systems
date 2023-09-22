@@ -32,13 +32,13 @@ pub trait AlphabetTrait<C: ConstantsTrait>: Clone + fmt::Display {
     fn evaluate(&self, state: &State) -> EvalReturns;
 }
 
-pub struct GLSystem<C: ConstantsTrait, S: AlphabetTrait<C>> {
+pub struct LSystem<C: ConstantsTrait, S: AlphabetTrait<C>> {
     pub constants: C, 
     pub axiom: Vec<S> 
 }
 
-impl<C: ConstantsTrait, S: AlphabetTrait<C>> Clone for GLSystem<C,S> {
-    fn clone(&self) -> GLSystem<C,S> {
+impl<C: ConstantsTrait, S: AlphabetTrait<C>> Clone for LSystem<C,S> {
+    fn clone(&self) -> LSystem<C,S> {
         let constants = self.constants.clone(); 
         
         let mut axiom = Vec::new(); 
@@ -47,12 +47,12 @@ impl<C: ConstantsTrait, S: AlphabetTrait<C>> Clone for GLSystem<C,S> {
             axiom.push(symbol.clone());
         };
 
-        GLSystem{ constants: constants, axiom: axiom }
+        LSystem{ constants: constants, axiom: axiom }
                 
     }
 }
 
-impl<C: ConstantsTrait, S: AlphabetTrait<C>> fmt::Display for GLSystem<C,S>{
+impl<C: ConstantsTrait, S: AlphabetTrait<C>> fmt::Display for LSystem<C,S>{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut string = String::new(); 
         for symbol in self.axiom.iter() {
@@ -62,8 +62,8 @@ impl<C: ConstantsTrait, S: AlphabetTrait<C>> fmt::Display for GLSystem<C,S>{
     }
 }
 
-impl <C: ConstantsTrait, S: AlphabetTrait<C>> GLSystem<C,S> {
-    pub fn produce(&self, iterations: u32) -> GLSystem<C,S> {        
+impl <C: ConstantsTrait, S: AlphabetTrait<C>> LSystem<C,S> {
+    pub fn produce(&self, iterations: u32) -> LSystem<C,S> {        
         // Copy the axiom 
         let mut axiom: Vec<S> = Vec::new(); 
         
@@ -82,7 +82,7 @@ impl <C: ConstantsTrait, S: AlphabetTrait<C>> GLSystem<C,S> {
 
         };
 
-        GLSystem { constants: self.constants.clone(), axiom: axiom }
+        LSystem { constants: self.constants.clone(), axiom: axiom }
 
     }
 
@@ -186,6 +186,54 @@ mod tests {
         }
     }
 
+    #[test] 
+    fn clone_and_produce() {
+        let constants = Constants{r: 1.456, p: 1.414}; 
+
+        let s0 = 1.0; 
+
+        let axiom = vec![A{s:s0}];
+
+        let lsystem = LSystem{constants: constants, axiom: axiom};
+
+        let lsystem_clone = lsystem.clone(); 
+
+        // Production 0 (Axiom)
+        assert_eq!(lsystem_clone.axiom,lsystem.axiom);
+
+        // Production 1
+        assert_eq!(lsystem_clone.produce(1).axiom,lsystem.produce(1).axiom);        
+    }
+
+    #[test]
+    fn produce_and_display() {
+        // If you want to see the println! outputs, run with
+        // cargo test -- --show-output
+        // or 
+        // cargo test -- --nocapture
+
+        let constants = Constants{r: 1.456, p: 1.414}; 
+
+        let r = constants.r; 
+        let p = constants.p; 
+
+        let s0 = 1.0; 
+
+        let axiom = vec![A{s:s0}];
+
+        let mut lsystem = LSystem{constants: constants, axiom: axiom};
+
+        println!("{lsystem}");
+
+        assert_eq!(format!("{lsystem}"),format!("{}",A{s:s0}));
+
+        lsystem = lsystem.produce(1); 
+
+        println!("{lsystem}");
+
+        assert_eq!(format!("{lsystem}"),format!("{}{}{}{}{}",F{x:s0}, Push, A{s:s0/r}, Pop, A{s:p}))
+    }
+
     #[test]
     fn produce() {        
         let constants = Constants{r: 1.456, p: 1.414}; 
@@ -197,7 +245,7 @@ mod tests {
 
         let axiom = vec![A{s:s0}];
 
-        let mut lsystem = GLSystem{constants: constants, axiom: axiom};
+        let mut lsystem = LSystem{constants: constants, axiom: axiom};
 
         // Production 0 (axiom) 
         assert_eq!(lsystem.axiom,vec![A{s:s0}]); 
@@ -224,7 +272,7 @@ mod tests {
 
         let axiom = vec![A{s:s0}];
 
-        let mut lsystem = GLSystem{constants: constants, axiom: axiom};
+        let mut lsystem = LSystem{constants: constants, axiom: axiom};
 
         let state0 = State::from(String::from("S1")); 
 
