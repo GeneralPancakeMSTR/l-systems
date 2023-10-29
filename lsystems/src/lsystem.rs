@@ -6,6 +6,7 @@ use crate::state::State;
 #[derive(Debug, PartialEq)]
 pub enum EvalReturns {
     State(State),
+    DropState(State),
     PushState, 
     PopState
 }
@@ -15,7 +16,9 @@ impl EvalReturns {
     fn unwrap_state(&self) -> State {
         match self {
             EvalReturns::State(state) => state.clone(), // #ToDo actually move state out of EvalReturns enum 
-            _ => State::from(String::from("Error: Tried to Extract State from PushState or PopState.")), // #ToDo Handle This Better
+            EvalReturns::DropState(state) => state.clone(),
+            EvalReturns::PushState => State::from(String::from("Error: Cannot extract state from PushState.")), // Improvements? 
+            EvalReturns::PopState => State::from(String::from("Error: Cannot extract state from PopState.")), // Improvements? 
         }
     }
 }
@@ -95,7 +98,14 @@ impl <C: ConstantsTrait, S: AlphabetTrait<C>> LSystem<C,S> {
         for symbol in self.axiom.iter() {
             match symbol.evaluate(&current_state) {
                 EvalReturns::State(state) => {
+                    // Extract Evaluated State and Record it 
+                    // "Move forward and draw a line."
                     states.push(state.clone());
+                    current_state = state; 
+                },                
+                EvalReturns::DropState(state) => {
+                    // Extract Evaluated State but DO NOT Record it 
+                    // "Move forward without drawing a line."
                     current_state = state; 
                 },
                 EvalReturns::PushState => {
@@ -123,6 +133,9 @@ impl <C: ConstantsTrait, S: AlphabetTrait<C>> LSystem<C,S> {
 }
 
 //////////////// Tests ////////////////
+/// Can run a specific test like this 
+// cargo test lsystem::tests::produce_and_display -- --exact --show-output
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,16 +152,19 @@ mod tests {
 
     impl ConstantsTrait for Constants{}
 
-    #[derive(Debug, Copy, Clone, PartialEq)]  // #ToDo Probably should add PartialEq to AlphabetTrait bounds
+    // #[state::op(RotateX(A))] // Or something 
+    #[derive(Debug, Copy, Clone, PartialEq)]
     enum Alphabet {
         A{s: f64},
-        F{x: f64},
+        F{x: f64},        
+        DropF{x: f64},        
         Push, 
         Pop 
     }
 
     use Alphabet::A;
     use Alphabet::F;
+    use Alphabet::DropF;
     use Alphabet::Push;
     use Alphabet::Pop; 
 
@@ -157,6 +173,7 @@ mod tests {
             match self {
                 A{s} => write!(f,"A({:.3})",s),
                 F{x} => write!(f,"F({:.3})",x),
+                DropF{x} => write!(f,"f({:.3})",x),
                 Push => write!(f,"["),
                 Pop => write!(f,"]")
             }
@@ -170,7 +187,7 @@ mod tests {
 
             match self {
                 A{s} => {
-                    vec![F{x:s.clone()}, Push, A{s:s/r}, Pop, A{s:p}]
+                    vec![F{x:s.clone()}, Push, A{s:s/r}, Pop, DropF{x:s.clone()}, A{s:p}]
                 },
                 _ => vec![self.clone()]
             }
@@ -180,10 +197,24 @@ mod tests {
             match self {
                 A{s} => EvalReturns::State(rx(state,s.clone())),
                 F{x} => EvalReturns::State(tx(state,x.clone())),
+                DropF{x} => EvalReturns::DropState(tx(state,x.clone())),
                 Push => EvalReturns::PushState, 
                 Pop => EvalReturns::PopState
             }
         }
+    }
+
+    #[test]
+    fn drop_state() {
+        let constants = Constants{r: 1.456, p: 1.414}; 
+
+        let s0 = 1.0; 
+
+        let axiom = vec![A{s:s0}]; 
+
+        let lsystem = LSystem{constants: constants, axiom: axiom}; 
+
+        println!("{lsystem}");
     }
 
     #[test] 
@@ -231,7 +262,14 @@ mod tests {
 
         println!("{lsystem}");
 
-        assert_eq!(format!("{lsystem}"),format!("{}{}{}{}{}",F{x:s0}, Push, A{s:s0/r}, Pop, A{s:p}))
+        assert_eq!(format!("{lsystem}"),format!("{}{}{}{}{}{}",F{x:s0}, Push, A{s:s0/r}, Pop, DropF{x:s0}, A{s:p}));
+
+        lsystem = lsystem.produce(1); 
+
+        println!("{lsystem}");
+
+        assert_eq!(format!("{lsystem}"),format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",F{x:s0}, Push, F{x:s0/r}, Push, A{s:s0/r/r}, Pop, DropF{x:s0/r}, A{s:p}, Pop, DropF{x:s0}, F{x:p}, Push, A{s:p/r}, Pop, DropF{x:p}, A{s:p}));
+
     }
 
     #[test]
@@ -253,12 +291,12 @@ mod tests {
         // Production 1
         lsystem = lsystem.produce(1);
 
-        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, A{s:s0/r}, Pop, A{s:p}]); 
+        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, A{s:s0/r}, Pop, DropF{x:s0}, A{s:p}]); 
 
         // Production 2
         lsystem = lsystem.produce(1);
 
-        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, F{x:s0/r}, Push, A{s:s0/r/r}, Pop, A{s:p}, Pop, F{x:p}, Push, A{s:p/r}, Pop, A{s:p}]); 
+        assert_eq!(lsystem.axiom,vec![F{x:s0}, Push, F{x:s0/r}, Push, A{s:s0/r/r}, Pop, DropF{x:s0/r}, A{s:p}, Pop, DropF{x:s0}, F{x:p}, Push, A{s:p/r}, Pop, DropF{x:p}, A{s:p}]); 
     }
 
     #[test]
@@ -286,10 +324,13 @@ mod tests {
 
         let states1 = lsystem.evaluate(&state0);
 
-        let f_x_s0 = F{x:s0}.evaluate(&state0).unwrap_state(); 
-        let a0_x_f_x_s0 = A{s:s0/r}.evaluate(&f_x_s0).unwrap_state(); 
-        let a1_x_f_x_s0 = A{s:p}.evaluate(&f_x_s0).unwrap_state(); 
+        // F{x:s0}, Push, A{s:s0/r}, Pop, DropF{x: s0}, A{s:p}
 
-        assert_eq!(states1,vec![state0.clone(),f_x_s0,a0_x_f_x_s0,a1_x_f_x_s0]);
+        let state1 = F{x:s0}.evaluate(&state0).unwrap_state(); // F{x:s0}
+        let state2 = A{s:s0/r}.evaluate(&state1).unwrap_state(); // A{s:s0/r}}
+        let state3 = DropF{x:s0}.evaluate(&state1).unwrap_state(); // f{x:s0}
+        let state4 = A{s:p}.evaluate(&state3).unwrap_state(); // A{s:p}
+
+        assert_eq!(states1,vec![state0,state1,state2,state4]); // Notice that state3 has been dropped 
     }
 }

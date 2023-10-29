@@ -1,0 +1,48 @@
+{
+"\\set": "\\left\\{ #1 \\right\\}",
+
+"\\test": "test",
+
+"\\dequal": "\\overset{\\Delta}{=}",
+
+"\\SS": "#1_{#2}^{#3}",
+
+"\\Sum": "\\sum_{#1}^{#2}",
+
+"\\tn": "\\textnormal{#1}",
+"\\eqst": "\\hspace{.25in}\\tn{#1}",
+
+"\\paren": "\\left( #1 \\right)",
+"\\Bracket": "\\left[#1\\right]",
+"\\Brace": "\\left\\{ #1 \\right\\}",
+"\\midBracket": "\\bigg[ #1 \\bigg]",
+
+"\\ba": "\\mathbf{a}",
+"\\bb": "\\mathbf{b}",
+"\\bc": "\\mathbf{c}",
+"\\bd": "\\mathbf{d}",
+"\\be": "\\mathbf{e}",
+"\\beff": "\\mathbf{f}",
+"\\bg": "\\mathbf{g}",
+"\\bh": "\\mathbf{h}",
+"\\bi": "\\mathbf{i}",
+"\\bj": "\\mathbf{j}",
+"\\bk": "\\mathbf{k}",
+"\\bl": "\\mathbf{l}",
+"\\bm": "\\mathbf{m}",
+"\\bn": "\\mathbf{n}",
+"\\bo": "\\mathbf{o}",
+"\\bp": "\\mathbf{p}",
+"\\bq": "\\mathbf{q}",
+"\\br": "\\mathbf{r}",
+"\\bs": "\\mathbf{s}",
+"\\bt": "\\mathbf{t}",
+"\\bu": "\\mathbf{u}",
+"\\bv": "\\mathbf{v}",
+"\\bw": "\\mathbf{w}",
+"\\bx": "\\mathbf{x}",
+"\\by": "\\mathbf{y}",
+"\\bz": "\\mathbf{z}"
+}
+
+

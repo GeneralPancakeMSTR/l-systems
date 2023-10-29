@@ -10,5 +10,9 @@
         "**/node_modules/*/**": true,
         "**/.hg/store/**": true,
         "**/target": true
-    }
+    },
+    "markdown.extension.math.enabled": false,
+    "mdmath.delimiters": "gitlab",
+    "mdmath.macroFile": "/mnt/raid1/git/GeneralPancakeMSTR/Rust/l-systems/.vscode/markdown_latex_macros.json",
+    "mdmath.savePath": "./${file.name}.html"
 }
